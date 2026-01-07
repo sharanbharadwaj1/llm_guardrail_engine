@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "failure_type": "REPAIR_EXHAUSTED",
+  "retries": 3,
+  "confidence": 0.0,
+  "latency_ms": 2046
+}
