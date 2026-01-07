@@ -8,7 +8,7 @@ import time
 from json import JSONDecodeError
 import json
 from core.models import ModelRole
-
+from core.policy import Policy
 
 
 # PROMPT_PATH = Path("prompts/summary.py")
@@ -18,11 +18,22 @@ ESCALATE_ON_FAILURES = {"SCHEMA_VIOLATION", "REPAIR_EXHAUSTED"}
 
 def run_engine(text: str):
     start = time.time()
-
+    policy = Policy()
     base_prompt = prompt_summary.replace("{{TEXT}}", text)
 
     # 1️⃣ Try FAST model
-    fast_result = repair_with_retries(base_prompt, role=ModelRole.FAST)
+    # fast_result = repair_with_retries(base_prompt, role=ModelRole.FAST)
+    
+    role = ModelRole.FAST
+    max_retries = (
+    policy.retries_fast
+    if role == ModelRole.FAST
+    else policy.retries_strong
+    )
+
+    fast_result = repair_with_retries(base_prompt, role=ModelRole.FAST, max_retries=max_retries)
+
+
     print(f"Fast result: {fast_result}")
 
     fast_confidence = compute_confidence(
@@ -32,11 +43,20 @@ def run_engine(text: str):
     )
 
     # 2️⃣ Decide escalation
+    # should_escalate = (
+    #     fast_result["status"] != "valid"
+    #     or fast_confidence < CONFIDENCE_THRESHOLD
+    #     or fast_result.get("failure_type") in ESCALATE_ON_FAILURES
+    # )
     should_escalate = (
-        fast_result["status"] != "valid"
-        or fast_confidence < CONFIDENCE_THRESHOLD
-        or fast_result.get("failure_type") in ESCALATE_ON_FAILURES
+    fast_result["status"] != "valid"
+    or (
+        policy.raw["escalation"]["confidence_below_threshold"]
+        and fast_confidence < policy.min_confidence
     )
+    or fast_result.get("failure_type") in policy.escalation_failures
+)
+
     
 
     if not should_escalate:
@@ -49,7 +69,8 @@ def run_engine(text: str):
             "retries": fast_result.get("retries"),
             "confidence": fast_confidence,
             "latency_ms": latency_ms,
-            "model_role": "FAST"
+            "model_role": "FAST",
+            "policy": policy.raw
         }
         if isinstance(fast_result.get("output"), BaseModel):
             # output = fast_result.get("output").model_dump()
@@ -97,7 +118,8 @@ def run_engine(text: str):
         "retries": strong_result.get("retries"),
         "confidence": strong_confidence,
         "latency_ms": latency_ms,
-        "model_role": "STRONG"
+        "model_role": "STRONG",
+        "policy": policy.raw
     }
     write_run_artifact(artifact)
 
