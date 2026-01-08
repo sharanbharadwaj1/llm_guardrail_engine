@@ -8,3 +8,9 @@ class FailureType(str, Enum):
     REPAIR_EXHAUSTED_INVALID_DATA = "repair_exhausted"
     UNKNOWN = "unknown"
     NONE = "none" 
+
+     # Level 2 additions
+    EMPTY_INPUT = "EMPTY_INPUT"
+    TOO_SHORT = "TOO_SHORT"
+    TOO_LONG = "TOO_LONG"
+    INVALID_FORMAT = "INVALID_FORMAT"

@@ -9,6 +9,14 @@ from json import JSONDecodeError
 import json
 from core.models import ModelRole
 from core.policy import Policy
+from core.precheck import run_prechecks
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
+
 
 
 # PROMPT_PATH = Path("prompts/summary.py")
@@ -18,6 +26,36 @@ ESCALATE_ON_FAILURES = {"SCHEMA_VIOLATION", "REPAIR_EXHAUSTED"}
 
 def run_engine(text: str):
     start = time.time()
+    #RUN PRE CHECK BEFORE LLM CALL
+    ok, failure = run_prechecks(text)
+
+    logging.info(f"Precheck result: {ok}, failure: {failure}")
+
+    if not ok:
+        latency_ms = int((time.time() - start) * 1000)
+        logging.info(f"Precheck failed. Writing artifact with failure: {failure}")
+        retries = max_retries + 1  # To skip LLM calls
+        artifact = {
+            "status": "Failed in Pre Checks",
+            "failure_type": failure,
+            "confidence": 0.0,
+            "retries": 0,
+            "output": None,
+            "latency_ms": None
+        }
+
+        write_run_artifact(artifact)
+
+        return {
+            "status": "Failed in Pre Checks",
+            "failure_type": failure,
+            "confidence": 0.0,
+            "retries": 0,
+            "output": None,
+            "latency_ms": None
+        }
+    
+    
     policy = Policy()
     base_prompt = prompt_summary.replace("{{TEXT}}", text)
 

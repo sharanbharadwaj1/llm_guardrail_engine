@@ -5,12 +5,14 @@ from core.errors import FailureType
 from pydantic import ValidationError
 
 
-def repair_with_retries(prompt: str, role, max_retries: int = 2):
+def repair_with_retries(prompt: str, role,  max_retries: int = 2):
     retries = 0
     last_failure = None
-
+    
+    
     while retries <= max_retries:
         try:
+            print("LLM call attempt made")
             output = call_llm(prompt, role)
             # return validate_output(output, retries)
             valid, failure_type, result = validate_summary(output)

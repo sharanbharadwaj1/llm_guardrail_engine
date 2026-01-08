@@ -21,4 +21,25 @@ def write_run_artifact(data: dict):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False, default=serialize)
 
+    count_and_delete_files_in_folder(folderpath =RUNS_DIR)
     return path
+
+def count_and_delete_files_in_folder(folderpath):
+    path = folderpath
+    # Count only items that are files (not directories)
+    count = sum(1 for entry in path.iterdir() if entry.is_file())
+    # Delete oldest files if count exceeds 5
+    sorted_files = sorted(path.iterdir(), key=lambda x: x.stat().st_mtime)
+    for file in sorted_files:
+        if file.is_file() and count>5:
+            print(f"Deleting files to maintain folder size under limit. Current count: {count}")
+            try:
+                file.unlink()
+                print(f'{file} is removed')
+                count -= 1
+                print(f"Updated count: {count}")
+            except OSError as e:
+                print(f'Error deleting {file}: {e}')
+            else:
+                break
+    return count

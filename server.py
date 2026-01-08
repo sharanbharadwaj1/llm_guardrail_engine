@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from core.observability import write_run_artifact
 
 
+
+
 app = FastAPI(
     title="LLM Guardrails Engine",
     description="Schema-enforced, repairable, confidence-scored LLM outputs",
@@ -38,7 +40,6 @@ def generate_summary(req: SummaryRequest):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = exc.errors()
-
     failure_type = "SCHEMA_VIOLATION"
     for err in errors:
         if err.get("type") == "json_invalid":
@@ -49,6 +50,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 "confidence": 0.0,
                 "retries": 0,
                 "latency_ms": 0,
+                "message":"Check Payload or JSON Format"
             }
             print("Writing validation error artifact")
             write_run_artifact(artifact)
@@ -64,6 +66,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "failure_type": failure_type,
             "confidence": 0.0,
             "retries": 0,
-            "output": None
+            "output": None,
+            "message":"Check Payload or JSON Format"
         }
     )
