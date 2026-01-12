@@ -1,0 +1,29 @@
+{
+  "status": "failed",
+  "output": null,
+  "failure_type": "REPAIR_EXHAUSTED",
+  "retries": 3,
+  "confidence": 0.0,
+  "latency_ms": 3281,
+  "model_role": "STRONG",
+  "policy": {
+    "confidence": {
+      "minimum": 0.6
+    },
+    "retries": {
+      "fast_model": 2,
+      "strong_model": 1
+    },
+    "escalation": {
+      "failure_types": [
+        "SCHEMA_VIOLATION",
+        "REPAIR_EXHAUSTED"
+      ],
+      "confidence_below_threshold": true
+    },
+    "models": {
+      "fast": "llama-3.1-8b-instant",
+      "strong": "llama-3.3-70b-versatile"
+    }
+  }
+}

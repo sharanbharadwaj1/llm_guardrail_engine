@@ -1,8 +1,0 @@
-{
-  "status": "valid",
-  "failure_type": "FailureType.NONE",
-  "retries": 0,
-  "confidence": 1.0,
-  "latency_ms": 468,
-  "model_role": "FAST"
-}

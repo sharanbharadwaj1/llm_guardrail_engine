@@ -1,8 +1,0 @@
-{
-  "status": "failed",
-  "failure_type": "REPAIR_EXHAUSTED",
-  "retries": 3,
-  "confidence": 0.0,
-  "latency_ms": 1635,
-  "model_role": "STRONG"
-}

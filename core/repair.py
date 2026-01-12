@@ -32,6 +32,18 @@ def repair_with_retries(prompt: str, role,  max_retries: int = 2):
             last_failure = "SCHEMA_VIOLATION"
         except JSONDecodeError:
             last_failure = "INVALID_JSON"
+        except RuntimeError as e:
+            failure_type = str(e)
+
+            if failure_type == FailureType.LLM_AUTH_FAILURE:
+                #  DO NOT RETRY AUTH FAILURES
+                return {
+                    "status": "failed",
+                    "failure_type": FailureType.LLM_AUTH_FAILURE,
+                    "retries": retries,
+                    "output": None,
+                }
+            last_failure = failure_type
                 
         retries += 1
         prompt = repair_prompt(prompt, last_failure)
@@ -44,53 +56,6 @@ def repair_with_retries(prompt: str, role,  max_retries: int = 2):
     }
 
 
-# def repair_with_retries(prompt: str, role,max_retries: int = 2):
-
-
-    
-
-#     last_error = None
-#     last_failure_type = None
-
-#     for attempt in range(max_retries + 1):
-#         try:
-#             output = call_llm(prompt,role)
-#         except Exception as e:
-#             print(f"LLM execution error: {FailureType.LLM_EXECUTION_ERROR}")
-#             return {
-#                 "status": "failed",
-#                 "failure_type": FailureType.LLM_EXECUTION_ERROR,
-#                 "error": str(e),
-#                 "retries": attempt
-#             }
-
-#         valid, failure_type, result = validate_summary(output)
-
-#         if valid:
-#             return {
-#                 "status": "valid",
-#                 "output": result,
-#                 "retries": attempt,
-#                 "failure_type": None
-#             }
-
-#         last_error = result
-#         last_failure_type = failure_type
-
-#         # prompt = (
-#         #     "The previous output was invalid.\n"
-#         #     f"Failure type: {failure_type}\n"
-#         #     f"Error: {last_error}\n\n"
-#         #     "Return ONLY valid JSON matching the schema."
-#         # )
-#         prompt = repair_prompt(prompt, last_failure_type)
-
-#     return {
-#         "status": "failed",
-#         "failure_type": FailureType.REPAIR_EXHAUSTED_INVALID_DATA,
-#         "error": last_error,
-#         "retries": max_retries
-#     }
 
 
 def repair_prompt(original_prompt: str, failure_type: str) -> str:

@@ -1,7 +1,0 @@
-{
-  "status": "failed",
-  "failure_type": "INVALID_INPUT_JSON",
-  "confidence": 0.0,
-  "retries": 0,
-  "latency_ms": 0
-}

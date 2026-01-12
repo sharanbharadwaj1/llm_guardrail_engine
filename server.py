@@ -5,6 +5,10 @@ from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from core.observability import write_run_artifact
+from schemas.batch import router as batch_router
+
+
+
 
 
 
@@ -70,3 +74,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message":"Check Payload or JSON Format"
         }
     )
+
+#batch routing endpoint
+app.include_router(batch_router)
