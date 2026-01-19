@@ -5,3 +5,6 @@ fastapi>=0.110
 uvicorn>=0.27
 openai
 PyYAML
+pandas
+numpy 
+scikit-learn

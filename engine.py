@@ -11,6 +11,7 @@ from core.models import ModelRole
 from core.policy import Policy
 from core.precheck import run_prechecks
 import logging
+from core.errors import FailureType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,11 +82,7 @@ def run_engine(text: str):
     )
 
     # 2️⃣ Decide escalation
-    # should_escalate = (
-    #     fast_result["status"] != "valid"
-    #     or fast_confidence < CONFIDENCE_THRESHOLD
-    #     or fast_result.get("failure_type") in ESCALATE_ON_FAILURES
-    # )
+    
     should_escalate = (
     fast_result["status"] != "valid"
     or (
@@ -94,7 +91,12 @@ def run_engine(text: str):
     )
     or fast_result.get("failure_type") in policy.escalation_failures
 )
-
+    if fast_result.get("failure_type") in {
+        FailureType.LLM_QUOTA_EXCEEDED,
+        FailureType.LLM_AUTH_FAILURE,
+    }:
+        should_escalate = False
+        fast_confidence = 0.0
     
 
     if not should_escalate:
@@ -107,8 +109,9 @@ def run_engine(text: str):
             "retries": fast_result.get("retries"),
             "confidence": fast_confidence,
             "latency_ms": latency_ms,
+            "semantic_score": fast_result.get("semantic_score"),
             "model_role": "FAST",
-            "policy": policy.raw
+            "policy": policy.raw         
         }
         if isinstance(fast_result.get("output"), BaseModel):
             # output = fast_result.get("output").model_dump()
@@ -123,6 +126,7 @@ def run_engine(text: str):
             "retries": fast_result.get("retries"),
             "confidence": fast_confidence,
             "latency_ms": latency_ms,
+            "semantic_score": fast_result.get("semantic_score"),
             "model_role": "FAST"
             }
 
@@ -157,7 +161,8 @@ def run_engine(text: str):
         "confidence": strong_confidence,
         "latency_ms": latency_ms,
         "model_role": "STRONG",
-        "policy": policy.raw
+        "policy": policy.raw,
+        "semantic_score": strong_result.get("semantic_score")
     }
     write_run_artifact(artifact)
 
@@ -168,6 +173,7 @@ def run_engine(text: str):
                 "confidence": strong_confidence,
                 "retries": strong_result.get("retries"),
                 "latency_ms": latency_ms,
+                "semantic_score": strong_result.get("semantic_score"),
                 "model_role": "STRONG"
             }
 

@@ -3,7 +3,7 @@ from core.executor import call_llm
 from core.validator import validate_summary
 from core.errors import FailureType
 from pydantic import ValidationError
-
+from core.observability import write_run_artifact
 
 def repair_with_retries(prompt: str, role,  max_retries: int = 2):
     retries = 0
@@ -15,7 +15,7 @@ def repair_with_retries(prompt: str, role,  max_retries: int = 2):
             print("LLM call attempt made")
             output = call_llm(prompt, role)
             # return validate_output(output, retries)
-            valid, failure_type, result = validate_summary(output)
+            valid, failure_type, result,score = validate_summary(output)
 
             if valid:
 
@@ -23,7 +23,8 @@ def repair_with_retries(prompt: str, role,  max_retries: int = 2):
                     "status": "valid",
                     "output": result,
                     "retries": retries,
-                    "failure_type": failure_type
+                    "failure_type": failure_type,
+                    "semantic_score": score
                 }
             last_failure = failure_type
             print(f"Validation failed: {failure_type}, Output:{output},CHECK 1")
@@ -35,14 +36,35 @@ def repair_with_retries(prompt: str, role,  max_retries: int = 2):
         except RuntimeError as e:
             failure_type = str(e)
 
-            if failure_type == FailureType.LLM_AUTH_FAILURE:
-                #  DO NOT RETRY AUTH FAILURES
+            failure_type = str(e)
+
+            # 🔴 HARD STOP failures
+            if failure_type in {
+                FailureType.LLM_AUTH_FAILURE,
+                FailureType.LLM_QUOTA_EXCEEDED,
+                FailureType.LLM_PROVIDER_UNAVAILABLE,
+
+            }:
+                last_failure = failure_type
+                artifact = {
+                    "status": "Hard Stop failure Occured during LLM call",
+                    "failure_type": last_failure,
+                    "retries": retries,
+                    "output": None,
+                    "message": "LLM authentication failed"
+                }
+
+                write_run_artifact(artifact)
+
                 return {
                     "status": "failed",
-                    "failure_type": FailureType.LLM_AUTH_FAILURE,
+                    "failure_type": last_failure,
                     "retries": retries,
                     "output": None,
                 }
+
+                
+                
             last_failure = failure_type
                 
         retries += 1

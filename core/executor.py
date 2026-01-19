@@ -1,4 +1,5 @@
 from groq import Groq
+from groq import GroqError
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -26,7 +27,10 @@ def call_llm(prompt: str, role: ModelRole) -> str:
 
     except GroqError as e:
         
-        if "401" in str(e) or "Unauthorized" in str(e):
+        if "401" in str(e) or "unauthorized" in str(e).lower():
             raise RuntimeError(FailureType.LLM_AUTH_FAILURE)
 
-        raise RuntimeError(FailureType.LLM_PROVIDER_ERROR)
+        if "quota" in str(e).lower() or "rate limit" in str(e).lower():
+            raise RuntimeError(FailureType.LLM_QUOTA_EXCEEDED)
+
+        raise RuntimeError(FailureType.LLM_PROVIDER_UNAVAILABLE)
